@@ -1,0 +1,94 @@
+---
+title: "Problem Set 3"
+author: "Amanda Carpenter"
+format: pdf
+---
+
+## Problem Set 3
+
+```{r}
+#| fig-height: 6
+#| fig-width: 7.5
+
+library(tidyverse)
+library(sf)
+library(tigris)
+library(viridis)
+library(usmap)
+
+# First we will create the full RUCC map
+
+data <- read_csv("Ruralurbancontinuumcodes2023.csv")
+
+# Filter for RUCC_2023 and prepare for plot_usmap
+rucc_data <- data %>%
+  filter(Attribute == "RUCC_2023") %>%
+  select(fips = FIPS, RUCC = Value) %>%
+  mutate(fips = stringr::str_pad(fips, 5, pad = "0")) %>% # Ensure 5-digit FIPS
+  filter(!is.na(RUCC)) # Remove NA values
+
+# Get state boundaries 
+state_boundaries <- us_map(regions = "states")
+
+# Create the map using plot_usmap
+plot_usmap(
+  data = rucc_data,
+  values = "RUCC",
+  color = "grey70", 
+  size = 0.05, 
+  labels = FALSE 
+) +
+  # Add state outlines as a geom_sf layer
+  geom_sf(
+    data = state_boundaries,
+    fill = NA, # No fill for state layer
+    color = "black", # Dark state outlines
+    size = 0.5 # Reduced from 1 for cleaner PDF rendering
+  ) +
+  scale_fill_viridis_d(
+    option = "viridis",
+    name = "Level of Rurality:",
+    labels = c("1" = "Most Urban", 
+               "2" = "2", 
+               "3" = "3", 
+               "4" = "4", 
+               "5" = "5", 
+               "6" = "6", 
+               "7" = "7", 
+               "8" = "8", 
+               "9" = "Most Rural"), 
+    guide = guide_legend(
+                 direction = "horizontal",
+                 keyheight = unit(1.5, units = "mm"),
+                 keywidth = unit(2.5, units = "mm"),
+                 title.position = 'top',
+                 title.hjust = 0.5,
+                 label.hjust = 0.5,
+                 nrow = 1,
+                 byrow = T,
+                 reverse = F,
+                 label.position = "bottom"
+  )) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    legend.title = element_text(size = 8),
+    legend.text = element_text(size = 6),
+    legend.margin = margin(t = 5, b = 5),
+    panel.grid = element_blank(),
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    axis.ticks = element_blank(),
+    plot.title = element_text(size = 10, hjust = 0.5),
+    plot.subtitle = element_text(size = 8, hjust = 0.5),
+    plot.caption = element_text(size = 6, hjust = 0),
+    plot.margin = margin(t = 10, r = 10, b = 10, l = 10, unit = "pt")
+  ) +
+  labs(
+    title = "USDA Rural-Urban Continuum Codes (RUCC) 2023",
+    subtitle = "County-Level Classification",
+    caption = "Source: USDA Economic Research Service"
+  )
+```
+
+The visualization shows the change in rural vs. urban counties according to the USDA rural-urban continuum codes (RUCC). The map shows several urban areas surrounded by rural regions. This might be useful for identifying locations to conduct rural needs assessments for public health interventions, programming, or policy initiatives.  
