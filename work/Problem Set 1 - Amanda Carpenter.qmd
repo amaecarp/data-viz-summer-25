@@ -1,0 +1,55 @@
+---
+title: "Problem Set 1"
+author: "Amanda Carpenter"
+format: pdf
+---
+
+## Problem Set 1
+
+```{r}
+library(tidyverse)
+mtcars_clean <- read_csv("~/Documents/GitHub/data-viz-summer-25/work/data/mtcars_clean.csv")
+```
+
+
+```{r}
+ggplot(mtcars_clean, aes(x = factor(am))) +
+  geom_bar(fill = "darkgreen", color = "gray20", linewidth = .5) +
+  scale_x_discrete(labels = c("0" = "Automatic", "1" = "Manual")) +
+  labs(
+    title = "Frequency of Transmission Types",
+    x = "",
+    y = "Count"
+  ) +
+  theme_minimal()
+```
+
+
+# Bar Chart
+Bar charts are useful for presenting categorical data. Bar charts report the frequencies for categorical data. 
+
+
+```{r}
+ggplot(mtcars_clean, aes(x = hp, y = mpg)) +
+  geom_point(color = "steelblue") +
+  labs(
+    subtitle = "Relationship between Horsepower and Miles Per Gallon",
+    x = "Horsepower",
+    y = "MPG"
+  ) +
+  theme_minimal()
+```
+
+
+# Scatter Plot
+Scatter plots are useful for presenting the visual relationship between two variables. Scatter plots show the association between two variables.
+
+```{r}
+ggplot(mtcars_clean, aes(x = efficiency)) +
+  geom_histogram(binwidth = 2, fill = "purple", color = "black") +
+  theme_minimal()
+```
+
+
+# Histogram
+Histograms are useful for presenting continuous data. Histograms show the distribution of continuous data. They can provide insight to the normality of the distribution. 

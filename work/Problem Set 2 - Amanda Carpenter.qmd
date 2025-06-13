@@ -1,0 +1,138 @@
+---
+title: "Problem Set 2"
+author: "Amanda Carpenter"
+format: pdf
+---
+
+## Problem Set 2
+
+# Step 1: Data
+
+```{r}
+library(tidyverse)
+mtcars_clean <- read_csv("~/Documents/GitHub/data-viz-summer-25/work/data/mtcars_clean.csv")
+```
+
+# Step 2: Aesthetic Mapping & Step 3: Geometric Shape
+
+The independent variable, weight, and dependent variable, miles per gallon, are both continuous. A scatter plot makes sense to examine the association between the two variables. 
+
+The first iteration shows the relationship between weight and miles per gallon by transmission type.  
+
+```{r}
+p1<- ggplot(mtcars, aes(wt, mpg, color = factor(am)))+
+  geom_point()
+p1
+```
+
+\newpage
+Adding the `theme_minimal` improves the font, removes the gray background, and adjusts the axis labels. 
+
+```{r}
+p2<- ggplot(mtcars, aes(wt, mpg, color = factor(am)))+
+  geom_point() +
+  theme_minimal()
+p2
+```
+
+\newpage
+Labeling the x and y axes removes the potentially confusing variable name abbreviations. 
+
+```{r}
+p3<- ggplot(mtcars, aes(wt, mpg, color = factor(am)))+
+  geom_point() + 
+  labs(x = "Car Weight", y = ("Miles per Gallon")) +
+  theme_minimal()
+p3
+```
+
+\newpage
+In the next iteration, I added a scatter plot title and changed the colors to stand out more. I also changed the legend label and value labels. 
+
+```{r}
+p4<- ggplot(mtcars, aes(wt, mpg, color = factor(am))) +
+  geom_point() +   
+  labs(x = "Car Weight", y = "Miles per Gallon", 
+       subtitle = "The Relationship Between Car Weight and Miles Per Gallon by Transmission Type") + 
+  scale_color_manual(name = "Automatic Transmission",    
+                    values = c("0" = "red", "1" = "darkgreen"),    
+                    labels = c("0" = "Yes", "1" = "No")  ) +  
+  theme_minimal()
+p4
+```
+
+\newpage
+In p5, I moved the legend to the bottom of the plot. 
+
+```{r}
+p5<- ggplot(mtcars, aes(wt, mpg, color = factor(am))) +
+  geom_point() + 
+  labs(x = "Car Weight", y = "Miles per Gallon", 
+       subtitle = "The Relationship Between Car Weight and Miles Per Gallon by Transmission Type") +
+  scale_x_continuous(labels = scales::comma_format()) +
+  scale_color_manual(
+    name = "Automatic Transmission:",
+    values = c("0" = "red", "1" = "darkgreen"),
+    labels = c("0" = "No", "1" = "Yes")
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    legend.justification = "center",
+    legend.direction = "horizontal"
+  )
+p5
+```
+
+# Step 4: Statistical Transformations
+
+In p6, I added lines of best fit for each transmission type. 
+
+```{r}
+p6<- ggplot(mtcars, aes(wt, mpg, color = factor(am))) +
+  geom_smooth(method = "lm", se = F) +
+  geom_point( alpha = .6, size = 2) + 
+  labs(x = "Car Weight", y = "Miles per Gallon", 
+       subtitle = "The Relationship Between Car Weight and Miles Per Gallon by Transmission Type") +
+  scale_x_continuous(labels = scales::comma_format()) +
+  scale_color_manual(
+    name = "Automatic Transmission:",
+    values = c("0" = "red", "1" = "darkgreen"),
+    labels = c("0" = "No", "1" = "Yes")
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    legend.justification = "center",
+    legend.direction = "horizontal"
+  )
+p6
+```
+
+\newpage
+# Step 5: Adjust Fine Details
+
+As a final step, I reduced the font size for the plot title and the legend label.
+```{r}
+p7<- ggplot(mtcars, aes(wt, mpg, color = factor(am))) +
+  geom_smooth(method = "lm", se = F) +
+  geom_point( alpha = .6, size = 2) + 
+  labs(x = "Car Weight", y = "Miles per Gallon", 
+       subtitle = "The Relationship Between Car Weight and Miles Per Gallon by Transmission Type") +
+  scale_x_continuous(labels = scales::comma_format()) +
+  scale_color_manual(
+    name = "Automatic Transmission:",
+    values = c("0" = "red", "1" = "darkgreen"),
+    labels = c("0" = "No", "1" = "Yes")
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    legend.justification = "center",
+    legend.direction = "horizontal", 
+    plot.subtitle = (element_text(size=11)),
+    legend.title = (element_text(size=9))
+  )
+p7
+```
+
