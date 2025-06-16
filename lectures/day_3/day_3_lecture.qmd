@@ -1,45 +1,463 @@
 ---
 title: "Data Visualization: Day 3"
 author: "Erik Westlund"
-date: "2025-06-04"
+date: "2025-06-12"
 date-modified: "`r format(Sys.Date(), '%Y-%m-%d')`"
 ---
 
-# Day 3: Advanced Visualization Techniques
+```{r setup}
+#| echo: false
+#| message: false
+#| warning: false
 
-## Overview
+# Install required packages if not already installed
+required_packages <- c("dplyr", "purrr", "janitor", "dagitty", "forcats", "ggdag", 
+                      "ggplot2", "ggtext", "stringr", "kableExtra")
+new_packages <- required_packages[!(required_packages %in% installed.packages()[,"Package"])]
+if(length(new_packages)) install.packages(new_packages)
+
+# Load required packages
+library(dplyr)
+library(purrr)
+library(janitor)
+library(dagitty)
+library(forcats)
+library(ggdag)
+library(ggplot2)
+library(ggtext)
+library(stringr)
+library(kableExtra)
+```
+
+# Housekeeping
+
+## Course Evaluations
+
+* JHSPH aims for 100% course evaluation completion
+* Please complete the course evaluation by [https://courseevalsystem.jhsph.edu/](following this link).
+* I will follow up with an email reminder or tow.
+
+## Problem Set 3 & Final Project
+
+- The final problem set is due tomorrow. 
+- The final project is due in three weeks, on July 3rd. 
+- Review the final assignment sheet on CoursePlus or [GitHub](https://github.com/erikwestlund/data-viz-summer-25/blob/main/assignments/Final%20Project.docx)
+- Submit all assignments via email or on CoursePlus
+- I prefer you put your work in the `work` directory on your GitHub repository fork
+
+## Final Project
+
+* Email it to me or submit it on CoursePlus
+* Basic requirements:
+  - Submit a rendered notebook
+  - Each visualizatoin needs a justification
+  - 10 visualizations total
+  - 5 can be univariate
+  - 5 must have at least two variables
+  - 2 must have three or more
+  - Make them polished
+
+## Support
+
+- Please feel free to reach out to me via email or Teams
+- I am happy to meet with you on Zoom to discuss your work and answer questions
+
+## Overview for Day 3
+
+# Day 3: What to Visualize – From Question to Plot
 
 ::: {.incremental}
-- Advanced plot customization
-- Color theory and accessibility
-- Interactive visualizations
-- Dashboard design principles
+- Scientific questions and DAGs
+- What to visualize: distributions, time, space, relationships, models
+- Key design principles: honesty, annotation, small multiples
+- Case studies: 7 applied examples
 :::
 
-## Advanced Customization
 
-* Themes and styling
-* Annotations and labels
-* Custom scales and transformations
-* Multi-panel plots
+## Theme: Science Drives Visualization
 
-## Color and Accessibility
+* Data visualization is valuable for its scientific application
+* It helps us:
+    - Understand our data
+    - Understand our models
+    - Communicate our findings in an impactful way
 
-* Color theory basics
-* Color blindness considerations
-* Contrast and readability
-* Color palettes for data visualization
+# DAGs, Scientific Complexity, Causal Inference, and Visualization
 
-## Interactive Elements
+## From Question to DAG to Plot
 
-* Introduction to interactive plots
-* Hover effects and tooltips
-* Zooming and panning
-* Dynamic filtering
+* We'll start with a scientific question.
+* We'll sketch out the causal structure using a DAG.
+* From this, we can assess typical problems scientific studies like this face
+* We can then use the DAG to guide our visualization choices
 
-## Dashboard Design
+## Scientific Question
 
-* Layout principles
-* Information hierarchy
-* User interaction patterns
-* Responsive design considerations 
+"What causes mothers to receive comprehensive postnatal care?"
+
+## Directed Acyclic Graphs
+
+* A DAG is a graph that represents the causal relationships between variables.
+* It is a directed graph, meaning that the edges have a direction.
+* It is an acyclic graph, meaning that there are no cycles in the graph.
+* It is a graph, meaning that it has nodes and edges.
+
+## How DAGs Help Us In Science &amp; Visualization
+
+* DAGs help us:
+
+    - Identify the variables that are important to the question
+    - Identify the variables that are confounding
+    - Identify the variables that are missing
+    - Identify the variables that are measured incorrectly
+
+* Having a good idea of the causal structure of a question helps us know what to visualize.
+
+## DAGs as a Visualization Tool
+
+* DAGs:
+
+    1. are themselves visualizations
+    2. encode scientific problems and causal structures
+* We can use the `daggity` R package to visualize the the causal structure of the problems around the motivating research question
+
+## Big Picture
+
+:::: {.columns}
+::: {.column width="60%"}
+```{r causes_general}
+rcp_dag <- dagify(RCP ~ PQ + PC + WTP + PT + RA + RP)
+
+rcp_dag |>
+    ggdag() +
+    theme_dag()
+```
+:::
+
+::: {.column width="40%" .small}
+- RCP = "Received Comprehensive Postnatal Care"
+- PQ = "Provider Quality"
+- PC = "Personal Capacity"
+- WTP = "Willingness to Pay"
+- PT = "Provider Trust"
+- RA = "Risk Aversion"
+- RP = "Risk Profile"
+:::
+::::
+
+## Provider Quality (PQ) Sub-DAG
+
+:::: {.columns}
+::: {.column width="60%"}
+```{r provider_quality}
+pq_dag <- dagify(
+  PQ ~ PEC,
+  PEC ~ ST
+)
+
+pq_dag |>
+    ggdag() +
+    theme_dag()
+```
+:::
+
+::: {.column width="40%" .small}
+- PQ = "Provider Quality"
+- PEC = "Political/Economic Conditions"
+- ST = "State"
+:::
+::::
+
+## Personal Capacity (PC) Sub-DAG
+
+:::: {.columns}
+::: {.column width="60%"}
+```{r personal_capacity}
+pc_dag <- dagify(
+  PC ~ DEP + JOB + INC + DIS,
+  DEP ~ INC + JOB + CO,
+  JOB ~ EDU + CO + R + M + I + CC,
+  DIS ~ PEC,
+  INC ~ JOB + EDU + RE + PEC + AGE
+)
+
+pc_dag |>
+    ggdag() +
+    theme_dag()
+```
+:::
+
+::: {.column width="40%" .small}
+- PC = "Personal Capacity"
+- DEP = "Dependents"
+- JOB = "Job Type"
+- INC = "Income"
+- DIS = "Distance to Provider"
+- CO = "Cultural Orientation"
+- EDU = "Educational Attainment"
+- R = "Resilience"
+- M = "Motivation"
+- I = "Intelligence"
+- CC = "Community Connections"
+- RE = "Race/Ethnicity"
+- AGE = "Age"
+:::
+::::
+
+## Willingness to Pay (WTP) Sub-DAG
+
+:::: {.columns}
+::: {.column width="60%"}
+```{r willingness_to_pay}
+wtp_dag <- dagify(
+  WTP ~ PQ + INC + INS + RA + CO,
+  INS ~ JOB + PEC + AGE,
+  CO ~ PED + PIN + REL + PEC + CC
+)
+
+wtp_dag |>
+    ggdag() +
+    theme_dag()
+```
+:::
+
+::: {.column width="40%" .small}
+- WTP = "Willingness to Pay"
+- PQ = "Provider Quality"
+- INC = "Income"
+- INS = "Insurance"
+- RA = "Risk Aversion"
+- CO = "Cultural Orientation"
+- JOB = "Job Type"
+- PEC = "Political/Economic Conditions"
+- AGE = "Age"
+- PED = "Parent Education"
+- PIN = "Parent Income"
+- REL = "Religion"
+- CC = "Community Connections"
+:::
+::::
+
+## Provider Trust (PT) Sub-DAG
+
+:::: {.columns}
+::: {.column width="60%"}
+```{r provider_trust}
+pt_dag <- dagify(
+  PT ~ PQ + RE + CO,
+  CO ~ PED + PIN + REL + PEC + CC
+)
+
+pt_dag |>
+    ggdag() +
+    theme_dag()
+```
+:::
+
+::: {.column width="40%" .small}
+- PT = "Provider Trust"
+- PQ = "Provider Quality"
+- RE = "Race/Ethnicity"
+- CO = "Cultural Orientation"
+- PED = "Parent Education"
+- PIN = "Parent Income"
+- REL = "Religion"
+- PEC = "Political/Economic Conditions"
+- CC = "Community Connections"
+:::
+::::
+
+## Risk Aversion (RA) Sub-DAG
+
+:::: {.columns}
+::: {.column width="60%"}
+```{r risk_aversion}
+ra_dag <- dagify(
+  RA ~ PQ + RP + INS,
+  RP ~ PQ + AGE + OBE + MG + DM + HD + PP + PR + HT + GHT,
+  INS ~ JOB + PEC + AGE
+)
+
+ra_dag |>
+    ggdag() +
+    theme_dag()
+```
+:::
+
+::: {.column width="40%" .small}
+- RA = "Risk Aversion"
+- PQ = "Provider Quality"
+- RP = "Risk Profile"
+- INS = "Insurance"
+- AGE = "Age"
+- OBE = "Obesity"
+- MG = "Multiple Gestation"
+- DM = "Diabetes Mellitus"
+- HD = "Heart Disease"
+- PP = "Placenta Previa"
+- PR = "Preeclampsia"
+- HT = "Hypertension"
+- GHT = "Gestational Hypertension"
+- JOB = "Job Type"
+- PEC = "Political/Economic Conditions"
+:::
+::::
+
+## Risk Profile (RP) Sub-DAG
+
+:::: {.columns}
+::: {.column width="60%"}
+```{r risk_profile}
+rp_dag <- dagify(
+  RP ~ PQ + AGE + OBE + MG + DM + HD + PP + PR + HT + GHT,
+  OBE ~ PEC + AGE,
+  MG ~ AGE + OBE,
+  DM ~ AGE + OBE + INC,
+  HD ~ AGE + OBE + DM,
+  PP ~ AGE + MG,
+  PR ~ AGE + HT + GHT + MG,
+  HT ~ AGE + OBE,
+  GHT ~ HT + MG
+)
+
+rp_dag |>
+    ggdag() +
+    theme_dag()
+```
+:::
+
+::: {.column width="40%" .small}
+- RP = "Risk Profile"
+- PQ = "Provider Quality"
+- AGE = "Age"
+- OBE = "Obesity"
+- MG = "Multiple Gestation"
+- DM = "Diabetes Mellitus"
+- HD = "Heart Disease"
+- PP = "Placenta Previa"
+- PR = "Preeclampsia"
+- HT = "Hypertension"
+- GHT = "Gestational Hypertension"
+- PEC = "Political/Economic Conditions"
+- INC = "Income"
+:::
+::::
+
+## Complete DAG Codification
+
+```{r complete_dag}
+complete_dag <- dagify(
+  RCP ~ PQ + PC + WTP + PT + RA + RP,
+  PQ ~ PEC,
+  PC ~ DEP + JOB + INC + DIS,
+  WTP ~ PQ + INC + INS + RA + CO,
+  PT ~ PQ + RE + CO,
+  RA ~ PQ + RP + INS,
+  RP ~ PQ + AGE + OBE + MG + DM + HD + PP + PR + HT + GHT,
+  PEC ~ ST,
+  DEP ~ INC + JOB + CO,
+  JOB ~ EDU + CO + R + M + I + CC,
+  DIS ~ PEC,
+  INC ~ JOB + EDU + RE + PEC + AGE,
+  INS ~ JOB + PEC + AGE,
+  CO ~ PED + PIN + REL + PEC + CC,
+  PIN ~ PEC + PED,
+  EDU ~ PED + PIN + R + M + I + CC,
+  R ~ PR,
+  M ~ PM,
+  I ~ PI,
+  CC ~ PCC,
+  REL ~ RE,
+  OBE ~ PEC + AGE,
+  MG ~ AGE + OBE,
+  DM ~ AGE + OBE + INC,
+  HD ~ AGE + OBE + DM,
+  PP ~ AGE + MG,
+  PR ~ AGE + HT + GHT + MG,
+  HT ~ AGE + OBE,
+  GHT ~ HT + MG
+)
+
+```
+
+## Complete DAG Visualization
+
+```{r complete_dag_visualization}
+complete_dag |>
+    ggdag() +
+    theme_dag()
+```
+
+# DAGs and Scientific Complexity
+
+## So What?
+
+* I think it's worth stepping back and considering how complex many scientific questions really are
+* We do not always observe everythign we want to, but with the help of DAGs we can:
+    - Identify the variables that are important to the question
+    - Identify what we can actually observe
+    - Identify what we cannot observe
+    - Assess the limitations we face with causal analysis
+
+## Next Steps
+
+* We are now going to work through several applications/case studies, each addressing a different aspect of visualization.
+
+## Side Quest: Simulated Data
+
+* In `examples/dag_sim_data.qmd` we simulated data that encodes the DAG structure.
+* Let's take a very brief glance at that file to see how we simulated the data.
+
+# Worfklow
+
+## Workflow: `ggplot` themes Staying DRY
+
+* In `ggplot_themes_and_staying_dry.qmd` we explore how to make a `ggplot` theme 
+* We also discuss how to `stay DRY` (Don't Repeat Yourself) when working with multifile notebooks
+
+## Workflow: Saving Visualizations
+
+* In `saving_visualizations.qmd` I show how to export/save visualizations
+* This includes some guidance on file format choices and best practices
+
+# Applications
+
+## Application 1: Effective and Honest Scales
+
+* In `applications_1_effective_and_honest_scales.qmd` we look at how to use scales and position effectively
+* We examine how axes can be used to mislead or clarify
+
+## Application 2: Choropleths for Spatial Data
+
+* In `applications_2_choropleths_for_spatial_data.qmd` we create a choropleth map of the United States using the simulated data from above
+* We show how even with maps, small multiples help find clarity
+
+## Application 3: Dot Plots for Spatial Data
+
+* In `applications_3_dot_plot_for_spatial_data.qmd` we create a dot plot of the data using the same simulated data.
+* We show how spatial variation can often be visualized better without actual maps.
+
+## Application 4: Distribution Plots
+
+* In `applications_4_distribution_plots.qmd` we examine distributions of variables
+* We create box plots, violin plots, and ridgeline plots to show the distribution of a variable across a population.
+
+## Application 5: Visualizing Time Trends
+
+* In `applications_5_visualizing_time_trends.qmd` we examine time trends of variables
+* We create line plots to show how a variable changes over time.
+* We also show how to visualize time trends using a sankey and sunburst plots.
+
+## Application 6: Visualizing Correlations and Models  
+
+* In `applications_6_visualizing_correlations_and_models.qmd` we visualize correlations and model outputs
+* We'll look at why it's important to visualize correlations and model outputs
+
+
+
+# Summary and Takeaways
+
+* Visualization choices should be driven by the **scientific question**
+* Experimentation is key; often the "obvious" plot is not the best plot
+* Iterate: build in layers; get the basics down; then polish
+* Use small multiples, annotations, and thoughtful scales to guide the viewer

@@ -5,6 +5,9 @@ scratch*
 work/data/*
 !work/data/.gitkeep
 
+# Large data files
+data/raw/cdc_PRAMStat_Data_for_2011_20250610.csv
+
 # Quarto
 .quarto/
 *_files/
@@ -78,9 +81,6 @@ Thumbs.db
 *.tmp
 *.temp
 
-# Data directory
-data/
-
 # Quarto generated files
 _site/
 _freeze/
@@ -109,6 +109,8 @@ lectures/**/_freeze/
 !Syllabus.docx
 !assignments/*.docx
 
-# Slides
-!slides/*.html
-!slides/day_1.html
+# Docs
+!docs/*.html
+!docs/**/*.html
+
+/.quarto/

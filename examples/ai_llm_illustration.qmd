@@ -1,0 +1,188 @@
+---
+title: "AI & LLM Example"
+author: "Erik Westlund"
+date: "2025-06-11"
+date-modified: "`r format(Sys.Date(), '%Y-%m-%d')`"
+editor:
+  render-on-save: true
+---
+
+## Overview
+
+* We'll use an LLM to help us prepare data for a visualization
+* Let's use the [CDC's data on influenza vaccination coverage for all ages](https://data.cdc.gov/Flu-Vaccinations/Influenza-Vaccination-Coverage-for-All-Ages-6-Mont/vh55-3he6/about_data)
+
+## Data Preparation
+
+```{r setup}
+#| echo: false
+#| message: false
+
+# Install required packages if not already installed
+required_packages <- c("dplyr", "ggplot2", "forcats", "janitor", "kableExtra", 
+                      "readr", "stringr", "tidyr")
+new_packages <- required_packages[!(required_packages %in% installed.packages()[,"Package"])]
+if(length(new_packages)) install.packages(new_packages)
+
+# Load required packages
+library(dplyr)
+library(ggplot2)
+library(forcats)
+library(janitor)
+library(kableExtra)
+library(readr)
+library(stringr)
+library(tidyr)
+
+```
+
+## Overview
+
+* We'll use an LLM to help us prepare data for a visualization
+* Let's use the [CDC's data on influenza vaccination coverage for all ages](https://data.cdc.gov/Flu-Vaccinations/Influenza-Vaccination-Coverage-for-All-Ages-6-Mont/vh55-3he6/about_data)
+
+## Data Preparation
+
+```{r}
+#| message: false
+
+df <- read_csv(here::here("data", "raw", "cdc_Influenza_Vaccination_Coverage_for_All_Ages__6__Months__20250610.csv"))
+
+df |> glimpse()
+```
+
+## Chat with the LLM
+
+### Data Preparation
+
+From here, we can chat with the LLM to help us prepare the data for a visualization.
+
+Below I provide key aspects of the prompts sent to the ChatGPT LLM as well as the results. I've excluded some of the LLM's missteps.
+
+### Initial Data Exploration
+
+I am working with an unfamiliar data set. Here is a glimpse using dplyr:
+
+```{r}
+df <- read_csv(here::here("data", "raw", "cdc_Influenza_Vaccination_Coverage_for_All_Ages__6__Months__20250610.csv"))
+df |> glimpse()
+```
+
+The bot then summarized the data set.
+
+Using the following prompt, we then sent the LLM the actual data file for more context (🚨 do not do this with private data! 🚨):
+
+"I am actually going to give you the file. Interpret it. We are going to use dplyr and ggplot2 to prepare it and visualize aspects of it. Tell me what you see."
+
+It responded with a summary, warning us about some of the odd structures of the data.
+
+We then asked it to clean the data:
+
+"Yes, let's get clean, standardized column names. Let's make all factor variables factor types. Let's extract the confidence intervals into separate columns. Let's just start there. Give me R code that I can paste into RStudio."
+
+Please note from here on out, ChatGPT gave us code that includes library calls and new code. The library calls are loaded above.
+
+It first gave us back broken code because it did not understand fully the results of applying `clean_names()` to the data.
+
+We eventually sent it the following, explaining the data structure, after which it recovered:
+
+```{r}
+# Clean and prepare
+clean_df <- df |>
+  clean_names() |>
+  mutate(
+    vaccine = factor(vaccine),
+    geography_type = factor(geography_type),
+    geography = factor(geography),
+    season_survey_year = factor(season_survey_year),
+    dimension_type = factor(dimension_type),
+    dimension = factor(dimension),
+    estimate = as.numeric(str_replace(estimate_percent, "[^0-9.]", "")),
+    ci_clean = str_remove(x95_percent_ci_percent, " ‡| †"),
+    ci_lower = as.numeric(str_extract(ci_clean, "^[0-9.]+")),
+    ci_upper = as.numeric(str_extract(ci_clean, "[0-9.]+$"))
+  )
+
+# Preview result
+glimpse(clean_df)
+```
+
+### Data Summary
+
+We then sent it this to inform it of the structure of the data, which is somewhat unusual:
+
+```{r}
+table(clean_df$dimension)
+table(clean_df$dimension_type)
+```
+
+Here is what we have:
+
+Please notice that the age categories have overlap, so it's clear that these data are pre-aggregated, and we'll want to make sure we use mutually exclusive categories.
+
+Here is what we want:
+
+We want to create a time series that shows the vaccination rate, by age, over time.
+
+Before you give me code, what do you recommend?
+
+It went over challenges and recommendations.
+
+We then asked it:
+
+"OK, give me that dataframe before we visualize"
+
+```{r}
+mutually_exclusive_ages <- c(
+  "6 Months - 4 Years",
+  "5-12 Years",
+  "13-17 Years",
+  "18-49 Years",
+  "50-64 Years",
+  ">=65 Years"
+)
+
+# Build the cleaned time series dataframe
+age_time_series <- clean_df |>
+  filter(
+    dimension_type == "Age",
+    dimension %in% mutually_exclusive_ages,
+    !is.na(estimate)
+  ) |>
+  group_by(season_survey_year, age_group = dimension) |>
+  summarise(
+    mean_estimate = mean(estimate, na.rm = TRUE),
+    n_records = n(),
+    .groups = "drop"
+  ) |>
+  mutate(
+    age_group = fct_relevel(age_group, mutually_exclusive_ages)
+  )
+
+# View the resulting structure
+glimpse(age_time_series)
+```
+
+### Data Visualization
+
+With the data now prepared and us asking for a line plot broken apart by age group, it gave us the following code, which worked the first time:
+
+```{r}
+ggplot(age_time_series, aes(x = season_survey_year, y = mean_estimate, group = age_group, color = age_group)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 2) +
+  labs(
+    title = "Influenza Vaccination Coverage Over Time by Age Group",
+    x = "Season/Survey Year",
+    y = "Mean Vaccination Estimate (%)",
+    color = "Age Group"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "bottom"
+  )
+```
+
+This image needs refinement, which ChatGPT would happily provide if we continued, but it worked. We wrote zero code ourselves.
+

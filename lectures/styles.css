@@ -29,6 +29,12 @@
   --background-alt: var(--gray-1);
 }
 
+/* Code block styling */
+
+code {
+  font-family: 'Fira Code', 'Source Code Pro', monospace !important;
+}
+
 /* Slide content adjustments */
 .reveal .slides section {
   font-size: 0.9em;
@@ -87,4 +93,8 @@ h2 {
 .reveal div.columns {
   display: flex;
   gap: 1em !important;
+}
+
+.reveal .small {
+  font-size: 0.7em;
 }
